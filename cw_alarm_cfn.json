@@ -1,0 +1,154 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "CloudFormation template for creating CloudWatch Alarm",
+
+	"Parameters": {
+	
+        "EmailId": {
+            "Description": "Email to send Notification",
+            "Type": "String"
+        },
+		
+		
+		"AutoScalingGroup": {
+            "Description": "Enter Auto Scaling Group Name",
+            "Type" : "String"
+        },
+		
+		"Period": {
+            "Description": "Period to Monitor",
+            "Type" : "String"
+        },
+			
+		"HighCPUUtilizationThreshold": {
+            "Description": "Enter High Threshold Value for Cpu Ulilization",
+            "Type" : "String"
+        },
+		
+		"StableCPUUtilizationThreshold": {
+            "Description": "Enter Stable Threshold Value for Cpu Ulilization",
+            "Type" : "String"
+        },
+		
+		"HighMemoryUtilizationThreshold": {
+            "Description": "Enter High Threshold value for Memory utilization",
+            "Type" : "String"
+        },
+		
+		"StableMemoryUtilizationThreshold": {
+            "Description": "Enter Stable Threshold value for Memory utilization",
+            "Type" : "String"
+        }
+	},
+	
+	
+    "Resources":{
+	
+		"CPUSNSTopic" : {
+			"Type" : "AWS::SNS::Topic",
+			"Properties" : {
+				"Subscription" : [ {
+					"Endpoint" : { "Ref" : "EmailId" },
+					"Protocol" : "email"
+				} ]
+			}
+		},
+		
+		
+		"MemorySNSTopic" : {
+			"Type" : "AWS::SNS::Topic",
+			"Properties" : {
+				"Subscription" : [ {
+					"Endpoint" : { "Ref" : "EmailId" },
+					"Protocol" : "email"
+				} ]
+			}
+		},
+		
+		
+		"HighCPUAlarm" : {
+			"Type" : "AWS::CloudWatch::Alarm",
+			"Properties" : {
+				"AlarmDescription" : "High CPU alarm for my instance",
+				"AlarmActions" : [ { "Ref" : "CPUSNSTopic" }, {"Fn::ImportValue": "TraineeServerScaleUpPolicyCPU"}  ],
+				"MetricName" : "CPUUtilization",
+				"Namespace" : "AWS/EC2",
+				"Statistic" : "Average",
+				"Period" : { "Ref" : "Period" },
+				"EvaluationPeriods" : "1",
+				"Threshold" : { "Ref" : "HighCPUUtilizationThreshold" },
+				"ComparisonOperator" : "GreaterThanOrEqualToThreshold",
+				"Dimensions" : [ {
+				  "Name" : "AutoScalingGroupName",
+				  "Value" : { "Ref" : "AutoScalingGroup" }
+				} ],
+				
+				"AlarmName" : "ASG_HighCPUAlarm"
+			}
+		},
+		
+		
+		"HighMemoryAlarm" : {
+			"Type" : "AWS::CloudWatch::Alarm",
+			"Properties" : {
+				"AlarmDescription" : "High Memory alarm for my instance",
+				"AlarmActions" : [ { "Ref" : "MemorySNSTopic" }, {"Fn::ImportValue": "TraineeServerScaleUpPolicyMemory"} ],
+				"MetricName" : "MemoryUtilization",
+				"Namespace" : "System/Linux",
+				"Statistic" : "Average",
+				"Period" : { "Ref" : "Period" },
+				"EvaluationPeriods" : "1",
+				"Threshold" : { "Ref" : "HighMemoryUtilizationThreshold" },
+				"ComparisonOperator" : "GreaterThanOrEqualToThreshold",
+				"Dimensions" : [ {
+				  "Name" : "AutoScalingGroupName",
+				  "Value" : { "Ref" : "AutoScalingGroup" }
+				} ],
+				
+				"AlarmName" : "ASG_HighMemoryAlarm"
+			}
+		},
+		
+		"StableCPUAlarm" : {
+			"Type" : "AWS::CloudWatch::Alarm",
+			"Properties" : {
+				"AlarmDescription" : "CPU Stable alarm for my instance",
+				"AlarmActions" : [ { "Ref" : "CPUSNSTopic" }, {"Fn::ImportValue": "TraineeServerScaleDownPolicyCPU"} ],
+				"MetricName" : "CPUUtilization",
+				"Namespace" : "AWS/EC2",
+				"Statistic" : "Average",
+				"Period" : { "Ref" : "Period" },
+				"EvaluationPeriods" : "1",
+				"Threshold" : { "Ref" : "StableCPUUtilizationThreshold" },
+				"ComparisonOperator" : "LessThanOrEqualToThreshold",
+				"Dimensions" : [ {
+				  "Name" : "AutoScalingGroupName",
+				  "Value" : { "Ref" : "AutoScalingGroup" }
+				} ],
+				
+				"AlarmName" : "ASG_StableCPUAlarm"
+			}
+		},
+		
+		"StableMemoryAlarm" : {
+			"Type" : "AWS::CloudWatch::Alarm",
+			"Properties" : {
+				"AlarmDescription" : "Stable Memory alarm for my instance",
+				"AlarmActions" : [ { "Ref" : "MemorySNSTopic" }, {"Fn::ImportValue": "TraineeServerScaleDownPolicyMemory"} ],
+				"MetricName" : "MemoryUtilization",
+				"Namespace" : "System/Linux",
+				"Statistic" : "Average",
+				"Period" : { "Ref" : "Period" },
+				"EvaluationPeriods" : "1",
+				"Threshold" : { "Ref" : "StableMemoryUtilizationThreshold" },
+				"ComparisonOperator" : "LessThanOrEqualToThreshold",
+				"Dimensions" : [ {
+				  "Name" : "AutoScalingGroupName",
+				  "Value" : { "Ref" : "AutoScalingGroup" }
+				} ],
+				
+				"AlarmName" : "ASG_StableMemoryAlarm"
+			}
+		}
+	}
+}
